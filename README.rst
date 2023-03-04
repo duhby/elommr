@@ -74,15 +74,16 @@ classes for more information.
                 print(f"{event.rating_mu}, {event.rating_sig}, {event.perf_score}, {event.place}")
             print(f"Final rating: {player.event_history[-1].display_rating()}")
 
-        >>> rating_mu, rating_sig, perf_score, place
-        >>> 1629, 171, 1654, 0
-        >>> 1645, 130, 1663, 0
-        >>> Final rating: 1645 ± 100
-
-        >>> rating_mu, rating_sig, perf_score, place
-        >>> 1371, 171, 1346, 1
-        >>> 1355, 130, 1337, 1
-        >>> Final rating: 1355 ± 100
+        # >>>
+        # rating_mu, rating_sig, perf_score, place
+        # 1629, 171, 1654, 0
+        # 1645, 130, 1663, 0
+        # Final rating: 1645 ± 100
+        #
+        # rating_mu, rating_sig, perf_score, place
+        # 1371, 171, 1346, 1
+        # 1355, 130, 1337, 1
+        # Final rating: 1355 ± 100
 
     if __name__ == '__main__':
         main()
