@@ -2,6 +2,6 @@
 __pycache__/
 dist/
 build/
-.egg-info/
+*.egg-info/
 secrets.sh
 test.py
