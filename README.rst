@@ -30,8 +30,8 @@ Quick Example
 ^^^^^^^^^^^^^
 
 You can view the docstrings for the
-`EloMMR <https://github.com/duhby/elommr/blob/master/elommr/elommr.py#L20>`_ and
-`Player <https://github.com/duhby/elommr/blob/master/elommr/elommr.py#L210>`_
+`EloMMR <https://github.com/duhby/elommr/blob/master/elommr/elommr.py#L21>`_ and
+`Player <https://github.com/duhby/elommr/blob/master/elommr/elommr.py#L230>`_
 classes for more information.
 
 .. code:: python
