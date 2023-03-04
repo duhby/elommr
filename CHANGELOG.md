@@ -19,6 +19,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Everything.
 
-[Unreleased]: https://github.com/duhby/elommr/compare/v1.0.2...master
+[Unreleased]: https://github.com/duhby/elommr/compare/v1.0.1...master
 [1.0.1]: https://github.com/duhby/elommr/releases/tag/v1.0.1
 [1.0.0]: https://github.com/duhby/elommr/releases/tag/v1.0.0
