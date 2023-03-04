@@ -25,4 +25,4 @@ rm -rfv dist build elommr.py.egg-info
 # Build package
 python -m build
 # Publish package
-twine upload dist/* -u$PYPI_USERNAME -p$PYPI_TOKEN
+twine upload dist/* -u $TWINE_USERNAME -p $TWINE_PASSWORD
