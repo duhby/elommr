@@ -1,0 +1,67 @@
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "elommr"
+authors = [{name = "duhby"}]
+description = "A minimal, Python implementation of the Elo-MMR rating system."
+readme = "README.rst"
+requires-python = ">=3.7"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+]
+license = {file = "LICENSE"}
+dynamic = ['version']
+
+[project.urls]
+Source = "https://github.com/duhby/elommr/"
+Changelog = "https://github.com/duhby/elommr/blob/master/CHANGELOG.md"
+"Bug Tracker" = "https://github.com/duhby/elommr/issues/"
+
+[tool.setuptools]
+packages = [
+    "elommr",
+]
+
+[tool.setuptools.dynamic]
+version = {attr = "elommr.__version__"}
+
+[tool.tbump]
+github_url = "https://github.com/duhby/elommr/"
+
+[tool.tbump.version]
+current = "0.0.1"
+regex = '''
+  (?P<major>\d+)
+  \.
+  (?P<minor>\d+)
+  \.
+  (?P<patch>\d+)
+  (.
+  (?P<extra>.+)
+  )?
+'''
+
+[tool.tbump.git]
+message_template = "Bump to {new_version}"
+tag_template = "v{new_version}"
+
+[[tool.tbump.file]]
+src = "elommr/__init__.py"
+search = "__version__ = '{current_version}'"
+
+[[tool.tbump.before_commit]]
+name = "check changelog"
+cmd = "git grep -q {new_version} CHANGELOG.md"
+
+[[tool.tbump.after_push]]
+name = "publish"
+cmd = "./publish.sh"
