@@ -28,7 +28,8 @@ class EloMMR:
     Parameters
     ----------
     split_ties: bool
-        Tbh not entirely sure what this does but we ball.
+        Whtether to count ties as half a win plus half a loss. Defaults
+        to False.
     drift_per_sec: float
         Uncertainty added passively between contests due to off-site
         practice or oxidation.
@@ -88,6 +89,11 @@ class EloMMR:
             player places 2nd, and the third and fourth players tie for
             3rd, the standings would look like this: ``[(player1, 0, 0),
             (player2, 1, 1), (player3, 2, 3), (player4, 2, 3)]``.
+
+            .. warning::
+
+                The order of the list matters. The placements must be
+                in order from first to last.
         contest_time: int
             The time of the contest in seconds since the epoch.
         weight: float

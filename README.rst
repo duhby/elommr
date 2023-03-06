@@ -66,6 +66,8 @@ classes for more information.
         elo_mmr.round_update(standings, contest_time)
 
         contest_time = round(datetime.now(timezone.utc).timestamp()) + 1000
+        # Assumes the outcome of the next competition is the same as the
+        # previous, so the standings aren't changed.
         elo_mmr.round_update(standings, contest_time)
 
         for player in [player1, player2]:
