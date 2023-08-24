@@ -10,6 +10,7 @@ from dataclasses import dataclass, field
 from functools import reduce
 from itertools import chain
 import math
+from typing import Optional
 
 
 TANH_MULTIPLIER = math.pi / math.sqrt(3)
@@ -68,7 +69,7 @@ class EloMMR:
     noob_delay: list = field(default_factory=list)
     sig_limit: float = DEFAULT_SIG_LIMIT
     transfer_speed: float = 1
-    max_history: int = None
+    max_history: Optional[int] = None
 
     def __post_init__(self):
         self.mul = 1 if self.split_ties else 2
@@ -78,7 +79,7 @@ class EloMMR:
         standings: list,
         contest_time: int = 0,
         weight: float = 1,
-        perf_ceiling: float = None,
+        perf_ceiling: Optional[float] = None,
     ):
         """Update the ratings of players in a round.
 
