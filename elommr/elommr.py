@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from functools import reduce
 from itertools import chain
 import math
-from typing import Optional
+from typing import Callable, Optional, Tuple
 
 
 TANH_MULTIPLIER = math.pi / math.sqrt(3)
@@ -108,8 +108,8 @@ class EloMMR:
                 This is supposed to work with a weight of 0, but it
                 doesn't for some reason.
         perf_ceiling: float
-            The maximum performance score a player can have. Defaults
-            to None, which means there is no limit.
+            The maximum performance score a player can have. If None
+            (default), there is no limit.
         """
         for player, lo, _ in standings:
             if player.update_time is None:
@@ -152,7 +152,7 @@ class EloMMR:
                 Rating(mu_perf, sig_perf), self.max_history
             )
 
-    def sig_perf_and_drift(self, weight: int, n: int) -> (float, float):
+    def sig_perf_and_drift(self, weight: int | float, n: int) -> Tuple[float, float]:
         weight *= self.weight_limit
         if n < len(self.noob_delay):
             weight *= self.noob_delay[n]
@@ -181,7 +181,7 @@ class TanhTerm:
             w_out=w,
         )
 
-    def base_values(self, x: float) -> (float, float):
+    def base_values(self, x: float) -> Tuple[float, float]:
         z = (x - self.mu) * self.w_arg
         val = -math.tanh(z) * self.w_out
         val_prime = -math.cosh(z) ** -2 * self.w_arg * self.w_out
@@ -238,7 +238,7 @@ class PlayerEvent:
             ``sig_limit`` parameter of the :class:`EloMMR` class.
             Defaults to 80.
         """
-        return f"{self.rating_mu} ± {stdevs * (self.rating_sig - sig_limit)}"
+        return f"{self.rating_mu} ± {stdevs * (self.rating_sig - sig_limit)}"  # type: ignore
 
 
 @dataclass
@@ -284,8 +284,8 @@ class Player:
     approx_posterior: Rating = field(
         default_factory=lambda: Rating(mu=DEFAULT_MU, sig=DEFAULT_SIG)
     )
-    update_time: int = None
-    delta_time: int = None
+    update_time: Optional[int] = None
+    delta_time: Optional[int] = None
 
     def add_noise_best(self, sig_noise: float, transfer_speed: float):
         new_posterior = self.approx_posterior.with_noise(sig_noise)
@@ -353,11 +353,14 @@ class Player:
         return f"Player(mu={last_event.rating_mu}, sig={last_event.rating_sig})"
 
 
-# Returns the unique zero of the following, strictly increasing function of x:
-# offset + slope * x + sum_i weight_i * tanh((x-mu_i)/sig_i)
-# We must have slope != 0 or |offset| < sum_i weight_i in order for the zero to exist.
-# If offset == slope == 0, we get a robust weighted average of the mu_i's.
 def robust_average(all_ratings: list, offset: float, slope: float) -> float:
+    """Return the unique zero of the following, strictly increasing function of x:
+
+    ``offset + slope * x + sum_i weight_i * tanh((x-mu_i)/sig_i)``
+
+    We must have slope != 0 or |offset| < sum_i weight_i in order for the zero to exist.
+    If offset == slope == 0, we get a robust weighted average of the mu_i's.
+    """
     bounds = (-6000.0, 9000.0)
 
     def weighted_tanh_deriv_sum(x: float) -> tuple:
@@ -395,9 +398,9 @@ def compute_likelihood_sum(x, tanh_terms, lo, hi, mul):
     )
 
 
-def solve_newton(bounds: tuple, f: callable):
+def solve_newton(bounds: Tuple[float, float], f: Callable) -> float:
     lo, hi = bounds
-    guess = 0.5 * (lo + hi)
+    guess: float = 0.5 * (lo + hi)
     while True:
         sum_, sum_prime = f(guess)
         extrapolate = guess - sum_ / sum_prime
@@ -413,3 +416,30 @@ def solve_newton(bounds: tuple, f: callable):
                     f"Possible failure to converge @ {guess}: s={sum_}, s'={sum_prime}"
                 )
             return guess
+
+
+def win_probability(
+    p1_mu: float,
+    p1_sig: float,
+    p2_mu: float,
+    p2_sig: float,
+    contest_weight: float = 0.05,
+    sig_perf: float = 200.0,
+) -> float:
+    """Return the probability that Player 1 will win the match
+
+    .. note::
+
+        See :class:`Rating` for more info on mu and sig parameters.
+
+    Parameters
+    ----------
+    p1_mu: float
+        Mu (rating) of Player 1
+    p1_sig: float
+        Sigma (standard deviation) of Player 1
+    """
+    sig_perf = sig_perf / math.sqrt(contest_weight)
+    sigma = math.sqrt(p1_sig**2 + p2_sig**2 + 2 * sig_perf**2)
+    z = (p1_mu - p2_mu) / sigma
+    return 0.5 + 0.5 * math.tanh(0.5 * TANH_MULTIPLIER * z)  # Logistic distribution
