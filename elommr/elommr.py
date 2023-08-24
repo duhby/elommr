@@ -17,6 +17,7 @@ DEFAULT_MU = 1500
 DEFAULT_SIG = 350
 DEFAULT_SIG_LIMIT = 80
 
+
 @dataclass
 class EloMMR:
     """Base Elo-MMR class. Used to interface with the Elo-MMR algorithm.
@@ -60,9 +61,10 @@ class EloMMR:
             set this to a low value, but it will make the algorithm
             less accurate.
     """
+
     split_ties: bool = False
     drift_per_sec: float = 0
-    weight_limit: float = .2
+    weight_limit: float = 0.2
     noob_delay: list = field(default_factory=list)
     sig_limit: float = DEFAULT_SIG_LIMIT
     transfer_speed: float = 1
@@ -76,7 +78,7 @@ class EloMMR:
         standings: list,
         contest_time: int = 0,
         weight: float = 1,
-        perf_ceiling: float = None
+        perf_ceiling: float = None,
     ):
         """Update the ratings of players in a round.
 
@@ -84,7 +86,7 @@ class EloMMR:
         ----------
         standings: List[Tuple[Player, int, int]]
             A list of tuples containing the player, and a placement
-            range, with first place being 0. For example, if there 
+            range, with first place being 0. For example, if there
             are 4 players, and the first player places 1st, the second
             player places 2nd, and the third and fourth players tie for
             3rd, the standings would look like this: ``[(player1, 0, 0),
@@ -111,15 +113,15 @@ class EloMMR:
         for player, lo, _ in standings:
             if player.update_time is None:
                 player.update_time = contest_time
-                player.delta_time = 0 # contest_time - player.update_time
+                player.delta_time = 0  # contest_time - player.update_time
             else:
                 player.delta_time = contest_time - player.update_time
                 player.update_time = contest_time
             player.event_history.append(
                 PlayerEvent(
-                    rating_mu=0, # Filled later
-                    rating_sig=0, # Filled later
-                    perf_score=0, # Filled later
+                    rating_mu=0,  # Filled later
+                    rating_sig=0,  # Filled later
+                    perf_score=0,  # Filled later
                     place=lo,
                 )
             )
@@ -154,21 +156,23 @@ class EloMMR:
         if n < len(self.noob_delay):
             weight *= self.noob_delay[n]
         sig_perf = self.sig_limit * math.sqrt(1 + 1 / weight)
-        sig_drift_sq = weight * self.sig_limit ** 2
+        sig_drift_sq = weight * self.sig_limit**2
         return (sig_perf, sig_drift_sq)
+
 
 @dataclass
 class TanhTerm:
     """Represents... something internal."""
+
     mu: float
     w_arg: float
     w_out: float
 
     def get_weight(self) -> float:
-        return self.w_out * self.w_arg * 2 / (TANH_MULTIPLIER ** 2)
+        return self.w_out * self.w_arg * 2 / (TANH_MULTIPLIER**2)
 
     @staticmethod
-    def from_rating(mu: float, sig: float) -> 'TanhTerm':
+    def from_rating(mu: float, sig: float) -> "TanhTerm":
         w = TANH_MULTIPLIER / sig
         return TanhTerm(
             mu=mu,
@@ -182,6 +186,7 @@ class TanhTerm:
         val_prime = -math.cosh(z) ** -2 * self.w_arg * self.w_out
         return (val, val_prime)
 
+
 @dataclass
 class Rating:
     """Represents a player's rating.
@@ -193,15 +198,17 @@ class Rating:
     sig: float
         The uncertainty level or standard deviation of the rating mu.
     """
+
     mu: float
     sig: float
 
-    def with_noise(self, sig_noise: float) -> 'Rating':
-        new_sig = math.sqrt(self.sig ** 2 + sig_noise ** 2)
+    def with_noise(self, sig_noise: float) -> "Rating":
+        new_sig = math.sqrt(self.sig**2 + sig_noise**2)
         return Rating(
             mu=self.mu,
             sig=new_sig,
         )
+
 
 @dataclass
 class PlayerEvent:
@@ -231,6 +238,7 @@ class PlayerEvent:
             Defaults to 80.
         """
         return f"{self.rating_mu} ± {stdevs * (self.rating_sig - sig_limit)}"
+
 
 @dataclass
 class Player:
@@ -266,6 +274,7 @@ class Player:
         The time since the last competition the player participated in.
         Represented as seconds.
     """
+
     _normal_factor: Rating = field(
         default_factory=lambda: Rating(mu=DEFAULT_MU, sig=DEFAULT_SIG)
     )
@@ -281,10 +290,10 @@ class Player:
         new_posterior = self.approx_posterior.with_noise(sig_noise)
 
         decay = (self.approx_posterior.sig / new_posterior.sig) ** 2
-        transfer = decay ** transfer_speed
+        transfer = decay**transfer_speed
         self.approx_posterior = new_posterior
 
-        wt_norm_old = self._normal_factor.sig ** -2
+        wt_norm_old = self._normal_factor.sig**-2
         wt_from_norm_old = transfer * wt_norm_old
         wt_from_transfers = (1 - transfer) * (
             wt_norm_old + sum(r.get_weight() for r in self._logistic_factors)
@@ -292,8 +301,8 @@ class Player:
         wt_total = wt_from_norm_old + wt_from_transfers
 
         self._normal_factor.mu = (
-            wt_from_norm_old * self._normal_factor.mu +
-            wt_from_transfers * self.approx_posterior.mu
+            wt_from_norm_old * self._normal_factor.mu
+            + wt_from_transfers * self.approx_posterior.mu
         ) / wt_total
         self._normal_factor.sig = (decay * wt_total) ** -0.5
         for r in self._logistic_factors:
@@ -315,7 +324,7 @@ class Player:
         if max_history is not None:
             if len(self._logistic_factors) >= max_history:
                 logistic = self._logistic_factors.pop(0)
-                wn = self._normal_factor.sig ** -2
+                wn = self._normal_factor.sig**-2
                 wl = logistic.get_weight()
                 self._normal_factor.mu = (
                     wn * self._normal_factor.mu + wl * logistic.mu
@@ -329,18 +338,19 @@ class Player:
         self.update_rating(new_rating, performance.mu)
 
     def approximate_posterior(self, perf_sig: float) -> Rating:
-        normal_weight = self._normal_factor.sig ** -2
+        normal_weight = self._normal_factor.sig**-2
         mu = robust_average(
             self._logistic_factors.copy(),
             -self._normal_factor.mu * normal_weight,
             normal_weight,
         )
-        sig = (self.approx_posterior.sig ** -2 + perf_sig ** -2) ** -0.5
+        sig = (self.approx_posterior.sig**-2 + perf_sig**-2) ** -0.5
         return Rating(mu=mu, sig=sig)
 
     def __repr__(self):
         last_event = self.event_history[-1]
         return f"Player(mu={last_event.rating_mu}, sig={last_event.rating_sig})"
+
 
 # Returns the unique zero of the following, strictly increasing function of x:
 # offset + slope * x + sum_i weight_i * tanh((x-mu_i)/sig_i)
@@ -354,30 +364,35 @@ def robust_average(all_ratings: list, offset: float, slope: float) -> float:
         for term in all_ratings:
             tanh_z = math.tanh((x - term.mu) * term.w_arg)
             s += tanh_z * term.w_out
-            sp += (1. - tanh_z * tanh_z) * term.w_arg * term.w_out
+            sp += (1.0 - tanh_z * tanh_z) * term.w_arg * term.w_out
         return (s + offset + slope * x, sp + slope)
 
     return solve_newton(bounds, weighted_tanh_deriv_sum)
+
 
 def eval_less(term: TanhTerm, x: float) -> tuple:
     val, val_prime = term.base_values(x)
     return (val - term.w_out, val_prime)
 
+
 def eval_grea(term: TanhTerm, x: float) -> tuple:
     val, val_prime = term.base_values(x)
     return (val + term.w_out, val_prime)
+
 
 def eval_equal(term: TanhTerm, x: float, mul: float) -> tuple:
     val, val_prime = term.base_values(x)
     return (mul * val, mul * val_prime)
 
+
 def compute_likelihood_sum(x, tanh_terms, lo, hi, mul):
     itr1 = (eval_less(term, x) for term in tanh_terms[:lo])
-    itr2 = (eval_equal(term, x, mul) for term in tanh_terms[lo:hi+1])
-    itr3 = (eval_grea(term, x) for term in tanh_terms[hi+1:])
+    itr2 = (eval_equal(term, x, mul) for term in tanh_terms[lo : hi + 1])
+    itr3 = (eval_grea(term, x) for term in tanh_terms[hi + 1 :])
     return reduce(
         lambda acc, v: (acc[0] + v[0], acc[1] + v[1]), chain(itr1, itr2, itr3), (0, 0)
     )
+
 
 def solve_newton(bounds: tuple, f: callable):
     lo, hi = bounds
@@ -393,5 +408,7 @@ def solve_newton(bounds: tuple, f: callable):
             guess = min(extrapolate, lo + 0.75 * (hi - lo))
         if lo >= guess or guess >= hi:
             if abs(sum_) > 1e-10:
-                print(f"Possible failure to converge @ {guess}: s={sum_}, s'={sum_prime}")
+                print(
+                    f"Possible failure to converge @ {guess}: s={sum_}, s'={sum_prime}"
+                )
             return guess
