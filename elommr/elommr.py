@@ -74,7 +74,7 @@ class EloMMR:
     max_history: Optional[int] = None
 
     def __post_init__(self):
-        self.mul = 1 if self.split_ties else 2
+        self.mul: int = 1 if self.split_ties else 2
 
     def round_update(
         self,
@@ -446,20 +446,20 @@ def eval_less(term: TanhTerm, x: float) -> tuple:
     return (val - term.w_out, val_prime)
 
 
-def eval_grea(term: TanhTerm, x: float) -> tuple:
+def eval_greater(term: TanhTerm, x: float) -> tuple:
     val, val_prime = term.base_values(x)
     return (val + term.w_out, val_prime)
 
 
-def eval_equal(term: TanhTerm, x: float, mul: float) -> tuple:
+def eval_equal(term: TanhTerm, x: float, mul: int) -> tuple:
     val, val_prime = term.base_values(x)
     return (mul * val, mul * val_prime)
 
 
-def compute_likelihood_sum(x, tanh_terms, lo, hi, mul):
+def compute_likelihood_sum(x: float, tanh_terms: list, lo: int, hi: int, mul: int):
     itr1 = (eval_less(term, x) for term in tanh_terms[:lo])
     itr2 = (eval_equal(term, x, mul) for term in tanh_terms[lo : hi + 1])
-    itr3 = (eval_grea(term, x) for term in tanh_terms[hi + 1 :])
+    itr3 = (eval_greater(term, x) for term in tanh_terms[hi + 1 :])
     return reduce(
         lambda acc, v: (acc[0] + v[0], acc[1] + v[1]), chain(itr1, itr2, itr3), (0, 0)
     )
@@ -485,6 +485,7 @@ def solve_newton(bounds: Tuple[float, float], f: Callable) -> float:
             return guess
 
 
+# TODO: Unambiguify
 def win_probability(
     p1_mu: float,
     p1_sig: float,
@@ -493,7 +494,8 @@ def win_probability(
     contest_weight: float = 0.05,
     sig_perf: float = 200.0,
 ) -> float:
-    """Return the probability that Player 1 will win the match
+    """Return the probability that Player 1 will win a 1v1 match
+    against Player 2.
 
     .. note::
 
