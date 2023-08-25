@@ -6,6 +6,7 @@ Copyright (c) 2021 Elo-MMR Project
 MIT License, see LICENSE for more details.
 """
 
+from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import reduce
 from itertools import chain
@@ -17,6 +18,7 @@ TANH_MULTIPLIER = math.pi / math.sqrt(3)
 DEFAULT_MU = 1500
 DEFAULT_SIG = 350
 DEFAULT_SIG_LIMIT = 80
+BOUNDS = (-6000.0, 9000.0)
 
 
 @dataclass
@@ -77,10 +79,10 @@ class EloMMR:
     def round_update(
         self,
         standings: list,
-        contest_time: int = 0,
+        contest_time: float = 0,
         weight: float = 1,
         perf_ceiling: Optional[float] = None,
-    ):
+    ) -> None:
         """Update the ratings of players in a round.
 
         Parameters
@@ -97,7 +99,7 @@ class EloMMR:
 
                 The order of the list matters. The placements must be
                 in order from first to last.
-        contest_time: int
+        contest_time: float
             The time of the contest in seconds since the epoch.
         weight: float
             The weight of the match. I recommend keeping this at 1
@@ -140,9 +142,8 @@ class EloMMR:
             tanh_terms.append(tanh_term)
 
         for player, lo, hi in standings:
-            bounds = (-6000.0, 9000.0)
             f = lambda x: compute_likelihood_sum(x, tanh_terms, lo, hi, self.mul)
-            solved = solve_newton(bounds, f)
+            solved = solve_newton(BOUNDS, f)
             if perf_ceiling is not None:
                 mu_perf = min(solved, perf_ceiling)
             else:
@@ -154,15 +155,20 @@ class EloMMR:
 
     def individual_update(
         self,
-        player: 'Player',
+        player: "Player",
         lo: int,
         hi: int,
         standings: list,
         contest_time: int = 0,
         weight: float = 1,
-    ):
+        perf_ceiling: Optional[float] = None,
+    ) -> None:
         """Update the rating of a single player.
 
+        .. note::
+
+            See :meth:`EloMMR.round_update` for more info on the standings,
+            contest_time, weight, and perf_ceiling parameters.
         .. note::
 
             Doesn't work correctly if there are any ties in the
@@ -175,15 +181,15 @@ class EloMMR:
                 player_ = player
             if player_.update_time is None:
                 player_.update_time = contest_time
-                player_.delta_time = 0 # contest_time - player_.update_time
+                player_.delta_time = 0  # contest_time - player_.update_time
             else:
                 player_.delta_time = contest_time - player_.update_time
                 player_.update_time = contest_time
             player_.event_history.append(
                 PlayerEvent(
-                    rating_mu=0, # Filled later
-                    rating_sig=0, # Filled later
-                    perf_score=0, # Filled later
+                    rating_mu=0,  # Filled later
+                    rating_sig=0,  # Filled later
+                    perf_score=0,  # Filled later
                     place=lo_,
                 )
             )
@@ -195,20 +201,21 @@ class EloMMR:
             sig_perf, discrete_drift = self.sig_perf_and_drift(
                 weight, len(player_.event_history) - 1
             )
-            continuous_drift = self.drift_per_sec * player_.delta_time
+            continuous_drift = self.drift_per_sec * player_.delta_time  # type: ignore
             sig_drift = math.sqrt(discrete_drift + continuous_drift)
             player_.add_noise_best(sig_drift, self.transfer_speed)
             with_noise = player_.approx_posterior.with_noise(sig_perf)
             tanh_term = TanhTerm.from_rating(with_noise.mu, with_noise.sig)
             tanh_terms.append(tanh_term)
 
-        bounds = (-6000.0, 9000.0)
         f = lambda x: compute_likelihood_sum(x, tanh_terms, lo, hi, self.mul)
-        mu_perf = solve_newton(bounds, f)
+        solved = solve_newton(BOUNDS, f)
+        if perf_ceiling is not None:
+            mu_perf = min(solved, perf_ceiling)
+        else:
+            mu_perf = solved
         sig_perf, _ = self.sig_perf_and_drift(weight, len(player.event_history) - 1)
-        player.update_rating_with_logistic(
-            Rating(mu_perf, sig_perf), self.max_history
-        )
+        player.update_rating_with_logistic(Rating(mu_perf, sig_perf), self.max_history)  # type: ignore
 
     def sig_perf_and_drift(self, weight: int | float, n: int) -> Tuple[float, float]:
         weight *= self.weight_limit
@@ -422,7 +429,6 @@ def robust_average(all_ratings: list, offset: float, slope: float) -> float:
     We must have slope != 0 or |offset| < sum_i weight_i in order for the zero to exist.
     If offset == slope == 0, we get a robust weighted average of the mu_i's.
     """
-    bounds = (-6000.0, 9000.0)
 
     def weighted_tanh_deriv_sum(x: float) -> tuple:
         s = sp = 0.0
@@ -432,7 +438,7 @@ def robust_average(all_ratings: list, offset: float, slope: float) -> float:
             sp += (1.0 - tanh_z * tanh_z) * term.w_arg * term.w_out
         return (s + offset + slope * x, sp + slope)
 
-    return solve_newton(bounds, weighted_tanh_deriv_sum)
+    return solve_newton(BOUNDS, weighted_tanh_deriv_sum)
 
 
 def eval_less(term: TanhTerm, x: float) -> tuple:
