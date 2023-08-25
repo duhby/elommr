@@ -12,6 +12,6 @@ __title__ = "elommr"
 __author__ = "duhby"
 __license__ = "MIT"
 __copyright__ = "Copyright 2023-present duhby"
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 
 from .elommr import *
