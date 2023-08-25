@@ -349,8 +349,11 @@ class Player:
         return Rating(mu=mu, sig=sig)
 
     def __repr__(self):
-        last_event = self.event_history[-1]
-        return f"Player(mu={last_event.rating_mu}, sig={last_event.rating_sig})"
+        if self.event_history:
+            last_event = self.event_history[-1]
+            return f"Player(mu={last_event.rating_mu}, sig={last_event.rating_sig})"
+        else:
+            return f"Player(mu={self.approx_posterior.mu}, sig={self.approx_posterior.sig})"
 
 
 def robust_average(all_ratings: list, offset: float, slope: float) -> float:
