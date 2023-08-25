@@ -285,7 +285,7 @@ class PlayerEvent:
 
     def display_rating(
         self, stdevs: float = 2, sig_limit: float = DEFAULT_SIG_LIMIT
-    ) -> float:
+    ) -> str:
         """A string representation of the rating.
 
         Displays the mean (self.rating_mu) of the rating, plus or minus
@@ -303,7 +303,7 @@ class PlayerEvent:
             ``sig_limit`` parameter of the :class:`EloMMR` class.
             Defaults to 80.
         """
-        return f"{self.rating_mu} ± {stdevs * (self.rating_sig - sig_limit)}"  # type: ignore
+        return f"{self.rating_mu} ± {stdevs * (self.rating_sig - sig_limit)}"
 
 
 @dataclass
