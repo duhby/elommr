@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- More type hints.
+
+### Fixed
+
+- Ambiguity.
+- Publish.sh file permissions.
+
 ## [1.2.0] - 2023-8-24
 
 ### Added
