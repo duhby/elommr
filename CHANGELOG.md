@@ -7,9 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2023-8-24
+
+### Added
+
+- EloMMR.individual_update.
+- More constants.
+
 ### Fixed
 
 - Player.__repr__.
+- Formatting.
 
 ## [1.1.0] - 2023-8-24
 
@@ -40,7 +48,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Everything.
 
-[Unreleased]: https://github.com/duhby/elommr/compare/v1.1.0...master
+[Unreleased]: https://github.com/duhby/elommr/compare/v1.2.0...master
+[1.2.0]: https://github.com/duhby/elommr/releases/tag/v1.2.0
 [1.1.0]: https://github.com/duhby/elommr/releases/tag/v1.1.0
 [1.0.2]: https://github.com/duhby/elommr/releases/tag/v1.0.2
 [1.0.1]: https://github.com/duhby/elommr/releases/tag/v1.0.1
