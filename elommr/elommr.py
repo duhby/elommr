@@ -152,6 +152,64 @@ class EloMMR:
                 Rating(mu_perf, sig_perf), self.max_history
             )
 
+    def individual_update(
+        self,
+        player: 'Player',
+        lo: int,
+        hi: int,
+        standings: list,
+        contest_time: int = 0,
+        weight: float = 1,
+    ):
+        """Update the rating of a single player.
+
+        .. note::
+
+            Doesn't work correctly if there are any ties in the
+            standings since it uses the ``lo`` and ``hi`` parameters
+            to determine the players to not update.
+        """
+        dummy_standings = deepcopy(standings)
+        for player_, lo_, hi_ in dummy_standings:
+            if lo_ == lo and hi_ == hi:
+                player_ = player
+            if player_.update_time is None:
+                player_.update_time = contest_time
+                player_.delta_time = 0 # contest_time - player_.update_time
+            else:
+                player_.delta_time = contest_time - player_.update_time
+                player_.update_time = contest_time
+            player_.event_history.append(
+                PlayerEvent(
+                    rating_mu=0, # Filled later
+                    rating_sig=0, # Filled later
+                    perf_score=0, # Filled later
+                    place=lo_,
+                )
+            )
+
+        tanh_terms = []
+        for player_, lo_, hi_ in dummy_standings:
+            if lo_ == lo and hi_ == hi:
+                player_ = player
+            sig_perf, discrete_drift = self.sig_perf_and_drift(
+                weight, len(player_.event_history) - 1
+            )
+            continuous_drift = self.drift_per_sec * player_.delta_time
+            sig_drift = math.sqrt(discrete_drift + continuous_drift)
+            player_.add_noise_best(sig_drift, self.transfer_speed)
+            with_noise = player_.approx_posterior.with_noise(sig_perf)
+            tanh_term = TanhTerm.from_rating(with_noise.mu, with_noise.sig)
+            tanh_terms.append(tanh_term)
+
+        bounds = (-6000.0, 9000.0)
+        f = lambda x: compute_likelihood_sum(x, tanh_terms, lo, hi, self.mul)
+        mu_perf = solve_newton(bounds, f)
+        sig_perf, _ = self.sig_perf_and_drift(weight, len(player.event_history) - 1)
+        player.update_rating_with_logistic(
+            Rating(mu_perf, sig_perf), self.max_history
+        )
+
     def sig_perf_and_drift(self, weight: int | float, n: int) -> Tuple[float, float]:
         weight *= self.weight_limit
         if n < len(self.noob_delay):
