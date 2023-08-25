@@ -60,12 +60,12 @@ classes for more information.
         # here to show how it can be used.
         # Do note, though, that you should either always include
         # contest_time or never include it, because if you include it
-        # in some rounds and not others, the ratings will be skewed
+        # in some competitions and not others, the ratings will be skewed
         # incorrectly.
         contest_time = round(datetime.now(timezone.utc).timestamp())
         elo_mmr.round_update(standings, contest_time)
 
-        contest_time = round(datetime.now(timezone.utc).timestamp()) + 1000
+        contest_time += 1000
         # Assumes the outcome of the next competition is the same as the
         # previous, so the standings aren't changed.
         elo_mmr.round_update(standings, contest_time)
