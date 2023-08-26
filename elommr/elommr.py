@@ -38,10 +38,11 @@ class EloMMR:
         Uncertainty added passively between contests due to off-site
         practice or oxidation.
     weight_limit: float
-        The maximum weight of a match. Values should be between 0 and 1.
+        The maximum weight of a competition. Values should be between 0
+        and 1.
     noob_delay: List[float]
         Amount to delay convergence for new players for beginning
-        matches. This number gets multiplied by the weight which
+        competitions. This number gets multiplied by the weight which
         decreases the speed sigma decreases. Values should be between
         0 and 1.
     sig_limit: float
@@ -102,13 +103,16 @@ class EloMMR:
         contest_time: float
             The time of the contest in seconds since the epoch.
         weight: float
-            The weight of the match. I recommend keeping this at 1
-            (default).
+            The weight of the competition. I recommend keeping this at 1
+            (default) and using the ``weight_limit`` parameter to
+            control the weight of competitions.
 
             .. note::
 
-                This is supposed to work with a weight of 0, but it
-                doesn't for some reason.
+                This will not work with 0. If you want to get the
+                performance score from a competition with 0 weight, you
+                can create a copy of the player and use the
+                :meth:`EloMMR.individual_update` method.
         perf_ceiling: float
             The maximum performance score a player can have. If None
             (default), there is no limit.
@@ -278,13 +282,13 @@ class Rating:
 
 @dataclass
 class PlayerEvent:
-    rating_mu: float
-    rating_sig: float
-    perf_score: float
+    rating_mu: int
+    rating_sig: int
+    perf_score: int
     place: int
 
     def display_rating(
-        self, stdevs: float = 2, sig_limit: float = DEFAULT_SIG_LIMIT
+        self, stdevs: float = 2, sig_limit: int = DEFAULT_SIG_LIMIT
     ) -> str:
         """A string representation of the rating.
 
