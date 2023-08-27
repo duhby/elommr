@@ -119,8 +119,8 @@ class EloMMR:
         """
         for player, lo, _ in standings:
             if player.update_time is None:
-                player.update_time = contest_time
                 player.delta_time = 0  # contest_time - player.update_time
+                player.update_time = contest_time
             else:
                 player.delta_time = contest_time - player.update_time
                 player.update_time = contest_time
@@ -184,8 +184,8 @@ class EloMMR:
             if lo_ == lo and hi_ == hi:
                 player_ = player
             if player_.update_time is None:
-                player_.update_time = contest_time
                 player_.delta_time = 0  # contest_time - player_.update_time
+                player_.update_time = contest_time
             else:
                 player_.delta_time = contest_time - player_.update_time
                 player_.update_time = contest_time
