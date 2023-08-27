@@ -46,11 +46,11 @@ classes for more information.
         standings = [
             (
                 player1,
-                0, 0 # Range of players that got or tied for first
+                0, 0  # Range of players that got or tied for first
             ),
             (
                 player2,
-                1, 1 # Range of players that got or tied for second
+                1, 1  # Range of players that got or tied for second
             ),
         ]
 
