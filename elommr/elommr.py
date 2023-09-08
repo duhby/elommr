@@ -221,7 +221,7 @@ class EloMMR:
         sig_perf, _ = self.sig_perf_and_drift(weight, len(player.event_history) - 1)
         player.update_rating_with_logistic(Rating(mu_perf, sig_perf), self.max_history)  # type: ignore
 
-    def sig_perf_and_drift(self, weight: int | float, n: int) -> Tuple[float, float]:
+    def sig_perf_and_drift(self, weight: float, n: int) -> Tuple[float, float]:
         weight *= self.weight_limit
         if n < len(self.noob_delay):
             weight *= self.noob_delay[n]
