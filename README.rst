@@ -73,7 +73,7 @@ classes for more information.
         for player in [player1, player2]:
             print("\nrating_mu, rating_sig, perf_score, place")
             for event in player.event_history:
-                print(f"{event.rating_mu}, {event.rating_sig}, {event.perf_score}, {event.place}")
+                print(f"{event.mu}, {event.sig}, {event.perf_score}, {event.place}")
             print(f"Final rating: {player.event_history[-1].display_rating()}")
 
         # >>>
