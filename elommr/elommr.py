@@ -10,6 +10,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from functools import reduce
 from itertools import chain
+import logging
 import math
 from typing import Callable, Optional, Tuple
 
@@ -18,7 +19,11 @@ TANH_MULTIPLIER = math.pi / math.sqrt(3)
 DEFAULT_MU = 1500
 DEFAULT_SIG = 350
 DEFAULT_SIG_LIMIT = 80
+DEFAULT_WEIGHT_LIMIT = 0.2
 BOUNDS = (-6000.0, 9000.0)
+
+# TODO: Add more debug logging messages
+_log = logging.getLogger("elommr")
 
 
 @dataclass
@@ -66,9 +71,11 @@ class EloMMR:
             less accurate.
     """
 
+    # TODO: add subsample_size, subsample_bucket, and possibly variant
+    # parameters
     split_ties: bool = False
     drift_per_sec: float = 0
-    weight_limit: float = 0.2
+    weight_limit: float = DEFAULT_WEIGHT_LIMIT
     noob_delay: list = field(default_factory=list)
     sig_limit: float = DEFAULT_SIG_LIMIT
     transfer_speed: float = 1
@@ -103,9 +110,9 @@ class EloMMR:
         contest_time: float
             The time of the contest in seconds since the epoch.
         weight: float
-            The weight of the competition. I recommend keeping this at 1
-            (default) and using the ``weight_limit`` parameter to
-            control the weight of competitions.
+            The relative weight of the competition. I recommend keeping
+            this at 1 (default) and using the ``weight_limit`` parameter
+            to control the weight of competitions.
 
             .. note::
 
@@ -117,6 +124,8 @@ class EloMMR:
             The maximum performance score a player can have. If None
             (default), there is no limit.
         """
+        _log.debug(f"Round update called with {len(standings)} players.")
+
         for player, lo, _ in standings:
             if player.update_time is None:
                 player.delta_time = 0  # contest_time - player.update_time
@@ -126,8 +135,8 @@ class EloMMR:
                 player.update_time = contest_time
             player.event_history.append(
                 PlayerEvent(
-                    rating_mu=0,  # Filled later
-                    rating_sig=0,  # Filled later
+                    mu=0,  # Filled later
+                    sig=0,  # Filled later
                     perf_score=0,  # Filled later
                     place=lo,
                 )
@@ -157,6 +166,8 @@ class EloMMR:
                 Rating(mu_perf, sig_perf), self.max_history
             )
 
+    # TODO: Make more efficient, possibly return the player and remove
+    # side effects.
     def individual_update(
         self,
         player: "Player",
@@ -191,8 +202,8 @@ class EloMMR:
                 player_.update_time = contest_time
             player_.event_history.append(
                 PlayerEvent(
-                    rating_mu=0,  # Filled later
-                    rating_sig=0,  # Filled later
+                    mu=0,  # Filled later
+                    sig=0,  # Filled later
                     perf_score=0,  # Filled later
                     place=lo_,
                 )
@@ -282,8 +293,8 @@ class Rating:
 
 @dataclass
 class PlayerEvent:
-    rating_mu: int
-    rating_sig: int
+    mu: int
+    sig: int
     perf_score: int
     place: int
 
@@ -292,9 +303,9 @@ class PlayerEvent:
     ) -> str:
         """A string representation of the rating.
 
-        Displays the mean (self.rating_mu) of the rating, plus or minus
+        Displays the mean (self.mu) of the rating, plus or minus
         the number of standard deviations specified by ``stdevs`` and
-        the uncertainty level (self.rating_sig), limited by
+        the uncertainty level (self.sig), limited by
         ``sig_limit``.
 
         Parameters
@@ -307,7 +318,7 @@ class PlayerEvent:
             ``sig_limit`` parameter of the :class:`EloMMR` class.
             Defaults to 80.
         """
-        return f"{self.rating_mu} ± {stdevs * (self.rating_sig - sig_limit)}"
+        return f"{self.mu} ± {stdevs * (self.sig - sig_limit)}"
 
 
 @dataclass
@@ -319,7 +330,6 @@ class Player:
         All of these attributes are modified in the
         :meth:`EloMMR.round_update` method. Do not modify them directly
         unless you know what you are doing.
-
     .. tip::
 
         If you want to change the initial rating of a player, you can
@@ -336,7 +346,8 @@ class Player:
     event_history: list
         The history of events for the player.
     approx_posterior: Rating
-        The approximate posterior of the player.
+        The approximate posterior of the player. (Current rating without
+        rounding.)
     update_time: int
         The time of the last competition the player
         participated in. Represented as seconds since the epoch.
@@ -381,14 +392,17 @@ class Player:
     def update_rating(self, rating, performance_score):
         # Assumes that a placeholder history item has been pushed
         last_event = self.event_history[-1]
-        assert last_event.rating_mu == 0
-        assert last_event.rating_sig == 0
+        assert last_event.mu == 0
+        assert last_event.sig == 0
         assert last_event.perf_score == 0
 
+
         self.approx_posterior = rating
-        last_event.rating_mu = round(rating.mu)
-        last_event.rating_sig = round(rating.sig)
+        last_event.mu = round(rating.mu)
+        last_event.sig = round(rating.sig)
         last_event.perf_score = round(performance_score)
+
+        _log.debug(f"Added event: {last_event}.")
 
     def update_rating_with_logistic(self, performance: Rating, max_history: int):
         if max_history is not None:
@@ -420,7 +434,7 @@ class Player:
     def __repr__(self):
         if self.event_history:
             last_event = self.event_history[-1]
-            return f"Player(mu={last_event.rating_mu}, sig={last_event.rating_sig})"
+            return f"Player(mu={last_event.mu}, sig={last_event.sig})"
         else:
             return f"Player(mu={self.approx_posterior.mu}, sig={self.approx_posterior.sig})"
 
@@ -483,36 +497,35 @@ def solve_newton(bounds: Tuple[float, float], f: Callable) -> float:
             guess = min(extrapolate, lo + 0.75 * (hi - lo))
         if lo >= guess or guess >= hi:
             if abs(sum_) > 1e-10:
-                print(
+                _log.warning(
                     f"Possible failure to converge @ {guess}: s={sum_}, s'={sum_prime}"
                 )
             return guess
 
 
-# TODO: Unambiguify
 def win_probability(
-    p1_mu: float,
-    p1_sig: float,
-    p2_mu: float,
-    p2_sig: float,
-    contest_weight: float = 0.05,
-    sig_perf: float = 200.0,
+    player: Rating,
+    foe: Rating,
+    contest_weight: float = DEFAULT_WEIGHT_LIMIT,
+    sig_perf: float = DEFAULT_SIG,
 ) -> float:
-    """Return the probability that Player 1 will win a 1v1 match
-    against Player 2.
-
-    .. note::
-
-        See :class:`Rating` for more info on mu and sig parameters.
+    """Return the probability that ``player`` will win a 1v1 match
+    against ``foe``.
 
     Parameters
     ----------
-    p1_mu: float
-        Mu (rating) of Player 1
-    p1_sig: float
-        Sigma (standard deviation) of Player 1
+    player: Rating
+        The rating of the player.
+    foe: Rating
+        The rating of the foe.
+    contest_weight: float
+        The weight of the competition. Defaults to 0.2. Higher values
+        diverge the returned value away from 0.5.
+    sig_perf: float
+        The uncertainty level of the player's performance. Defaults to
+        350. Higher values converge the returned value towards 0.5.
     """
     sig_perf = sig_perf / math.sqrt(contest_weight)
-    sigma = math.sqrt(p1_sig**2 + p2_sig**2 + 2 * sig_perf**2)
-    z = (p1_mu - p2_mu) / sigma
+    sigma = math.sqrt(player.sig**2 + foe.sig**2 + 2 * sig_perf**2)
+    z = (player.mu - foe.mu) / sigma
     return 0.5 + 0.5 * math.tanh(0.5 * TANH_MULTIPLIER * z)  # Logistic distribution
