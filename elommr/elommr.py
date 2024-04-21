@@ -12,7 +12,7 @@ from functools import reduce
 from itertools import chain
 import logging
 import math
-from typing import Callable, Optional, Tuple
+from typing import Callable, List, Optional, Tuple
 
 
 TANH_MULTIPLIER = math.pi / math.sqrt(3)
@@ -341,9 +341,9 @@ class Player:
     ----------
     _normal_factor: Rating
         The normal factor of the player.
-    _logistic_factors: list
+    _logistic_factors: List[TanhTerm]
         The logistic factors of the player.
-    event_history: list
+    event_history: List[PlayerEvent]
         The history of events for the player.
     approx_posterior: Rating
         The approximate posterior of the player. (Current rating without
@@ -395,7 +395,6 @@ class Player:
         assert last_event.mu == 0
         assert last_event.sig == 0
         assert last_event.perf_score == 0
-
 
         self.approx_posterior = rating
         last_event.mu = round(rating.mu)
