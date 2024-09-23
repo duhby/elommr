@@ -1,8 +1,7 @@
 """
-Copyright (c) 2023-present duhby
-MIT License, see LICENSE for more details.
-
 Copyright (c) 2021 Elo-MMR Project
+Copyright (c) 2023-present duhby
+
 MIT License, see LICENSE for more details.
 """
 
