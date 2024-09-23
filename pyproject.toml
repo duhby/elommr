@@ -4,18 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "elommr"
-authors = [{name = "duhby"}]
+authors = [{ name = "duhby" }]
 description = "A minimal, Python implementation of the Elo-MMR rating system."
 readme = "README.rst"
 requires-python = ">=3.10"
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Natural Language :: English",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "License :: OSI Approved :: MIT License",
+  "Development Status :: 5 - Production/Stable",
+  "Natural Language :: English",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "License :: OSI Approved :: MIT License",
 ]
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 dynamic = ['version']
 
 [project.urls]
@@ -24,12 +25,10 @@ Changelog = "https://github.com/duhby/elommr/blob/master/CHANGELOG.md"
 "Bug Tracker" = "https://github.com/duhby/elommr/issues/"
 
 [tool.setuptools]
-packages = [
-    "elommr",
-]
+packages = ["elommr"]
 
 [tool.setuptools.dynamic]
-version = {attr = "elommr.__version__"}
+version = { attr = "elommr.__version__" }
 
 [tool.tbump]
 github_url = "https://github.com/duhby/elommr/"
