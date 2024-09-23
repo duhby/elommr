@@ -11,7 +11,7 @@ from functools import reduce
 from itertools import chain
 import logging
 import math
-from typing import Callable, List, Optional, Tuple
+from typing import Callable, Optional, Tuple
 
 
 TANH_MULTIPLIER = math.pi / math.sqrt(3)
